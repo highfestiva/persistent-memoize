@@ -9,7 +9,7 @@ def test_foreground_memoize():
 		os.remove('testdb')
 	global callcnt
 	callcnt = 0
-	@persistent_memoize('testdb')
+	@persistent_memoize('testdb', write_behind_count=0)
 	def somecall(t, apa, bepa):
 		global callcnt
 		callcnt += 1
@@ -35,17 +35,17 @@ def test_background_memoize():
 		os.remove('testdb')
 	global callcnt
 	callcnt = 0
-	@persistent_background_memoize('testdb')
+	@persistent_background_memoize('testdb', write_behind_count=0)
 	def othercall(n):
 		global callcnt
 		callcnt += 1
-		time.sleep(0.01)
+		time.sleep(0.001)
 		return n//11
 	assert othercall(55) == 0 # Extrapolation from nothing.
-	time.sleep(0.1)
+	time.sleep(0.05)
 	assert othercall(55) == 5 # Memoized.
 	assert othercall(66) == 5 # Extrapolated from previously memoized.
-	time.sleep(0.1)
+	time.sleep(0.05)
 	assert othercall(66) == 6 # Memoized.
 	assert callcnt == 2
 	assert len(othercall.background_threads) == 0
@@ -57,16 +57,34 @@ def test_auto_filename():
 	import time
 	if os.path.exists('memoize_testdb'):
 		os.remove('memoize_testdb')
-	@persistent_memoize('.') # Persist using function name in current directory.
-	def testdb():
+	@persistent_memoize('.') # Persist using function name in given directory.
+	def testdb(i):
 		pass
-	testdb()
+	for i in range(100):
+		testdb(i)
 	assert os.path.exists('memoize_testdb')
 	os.remove('memoize_testdb')
+
+
+def test_thread_flood():
+	import os
+	import time
+	if os.path.exists('memoize_slow'):
+		os.remove('memoize_slow')
+	@persistent_background_memoize('.', write_behind_count=0) # Persist using function name in given directory.
+	def slow(i):
+		time.sleep(0.001)
+		return 0
+	for i in range(100):
+		slow(i)
+	slow.join()
+	assert os.path.exists('memoize_slow')
+	os.remove('memoize_slow')
 
 
 if __name__ == '__main__':
 	test_foreground_memoize()
 	test_background_memoize()
 	test_auto_filename()
+	test_thread_flood()
 	print('Foreground, background and persistence seems ok.')
