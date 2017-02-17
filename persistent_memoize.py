@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 from functools import partial
+from os.path import isdir, join as pathjoin
 from threading import Thread
 
 
@@ -20,6 +21,8 @@ def persistent_background_memoize(filename, extrapolate=average_extrapolation(de
 	def decorator(func):
 		class pdict(OrderedDict):
 			def __init__(self, filename, func):
+				if isdir(filename):
+					filename = pathjoin(filename, func.__name__)
 				self.filename = filename
 				self.load()
 				self.func = func
@@ -37,7 +40,7 @@ def persistent_background_memoize(filename, extrapolate=average_extrapolation(de
 					if remove_entries >= 10:
 						for k in list(self.keys())[:remove_entries]:
 							del self[k]
-					open(filename, 'w').write(repr(self).replace('pdict','OrderedDict'))
+					open(self.filename, 'w').write(repr(self).replace('pdict','OrderedDict'))
 					return value
 				finally:
 					if key in self.background_threads:

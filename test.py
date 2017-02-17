@@ -27,7 +27,7 @@ def test_foreground_memoize():
 	assert len(somecall) == 1000
 	os.remove('testdb')
 
-	
+
 def test_background_memoize():
 	import os
 	import time
@@ -52,7 +52,21 @@ def test_background_memoize():
 	os.remove('testdb')
 
 
+def test_auto_filename():
+	import os
+	import time
+	if os.path.exists('testdb'):
+		os.remove('testdb')
+	@persistent_memoize('.') # Persist using function name in current directory.
+	def testdb():
+		pass
+	testdb()
+	assert os.path.exists('testdb')
+	os.remove('testdb')
+
+
 if __name__ == '__main__':
 	test_foreground_memoize()
 	test_background_memoize()
+	test_auto_filename()
 	print('Foreground, background and persistence seems ok.')
