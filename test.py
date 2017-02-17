@@ -55,14 +55,14 @@ def test_background_memoize():
 def test_auto_filename():
 	import os
 	import time
-	if os.path.exists('testdb'):
-		os.remove('testdb')
+	if os.path.exists('memoize_testdb'):
+		os.remove('memoize_testdb')
 	@persistent_memoize('.') # Persist using function name in current directory.
 	def testdb():
 		pass
 	testdb()
-	assert os.path.exists('testdb')
-	os.remove('testdb')
+	assert os.path.exists('memoize_testdb')
+	os.remove('memoize_testdb')
 
 
 if __name__ == '__main__':

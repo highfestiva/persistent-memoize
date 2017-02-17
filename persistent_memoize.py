@@ -22,7 +22,7 @@ def persistent_background_memoize(filename, extrapolate=average_extrapolation(de
 		class pdict(OrderedDict):
 			def __init__(self, filename, func):
 				if isdir(filename):
-					filename = pathjoin(filename, func.__name__)
+					filename = pathjoin(filename, 'memoize_'+func.__name__)
 				self.filename = filename
 				self.load()
 				self.func = func
