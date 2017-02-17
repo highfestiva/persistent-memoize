@@ -16,7 +16,7 @@ def average_extrapolation(default):
 	return extrapolate
 
 
-def persistent_background_memoize(filename='/tmp/', extrapolate=average_extrapolation(default=0), max_entries=1000, write_behind_count=10, max_threads=10):
+def persistent_background_memoize(filename='/tmp/', extrapolate=average_extrapolation(default=0), max_entries=10000, write_behind_count=10, max_threads=10):
 	'''Memoization that will return an extrapolated (or default) value while a background
 	   thread fetches a new one. The values are persistent to <filename> on disk, so the
 	   memoization will just keep running when the app is restarted.'''
@@ -32,10 +32,15 @@ def persistent_background_memoize(filename='/tmp/', extrapolate=average_extrapol
 				self.updates = 0
 			def load(self):
 				try:
-					d = eval(open(self.filename).read())
-					self.update(d)
-				except FileNotFoundError:
-					pass
+					with open(self.filename) as f:
+						d = eval(f.read())
+						self.update(d)
+				except:
+					pass	# Silently pass. All values will have to be reloaded.
+			def save(self):
+				with open(self.filename, 'w') as f:
+					f.write(repr(self).replace('pdict','OrderedDict'))
+					self.updates = 0
 			def fetch(self, key):
 				try:
 					value = self[key] = self.func(*key)
@@ -47,8 +52,7 @@ def persistent_background_memoize(filename='/tmp/', extrapolate=average_extrapol
 							del self[k]
 					if self.updates >= write_behind_count:
 						try:
-							with open(self.filename, 'w') as f:
-								f.write(repr(self).replace('pdict','OrderedDict'))
+							self.save()
 						except:
 							pass	# Silently pass. Next thread will write instead.
 					return value
@@ -76,6 +80,6 @@ def persistent_background_memoize(filename='/tmp/', extrapolate=average_extrapol
 	return partial(decorator)
 
 
-def persistent_memoize(filename='/tmp/', max_entries=1000, write_behind_count=10):
+def persistent_memoize(filename='/tmp/', max_entries=10000, write_behind_count=10):
 	'''Memoization running only in the foregreound. Will not create worker threads.'''
 	return persistent_background_memoize(filename, extrapolate=None, max_entries=max_entries, write_behind_count=write_behind_count)

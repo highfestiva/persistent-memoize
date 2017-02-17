@@ -9,7 +9,7 @@ def test_foreground_memoize():
 		os.remove('testdb')
 	global callcnt
 	callcnt = 0
-	@persistent_memoize('testdb', write_behind_count=0)
+	@persistent_memoize('testdb', write_behind_count=0, max_entries=100)
 	def somecall(t, apa, bepa):
 		global callcnt
 		callcnt += 1
@@ -21,10 +21,10 @@ def test_foreground_memoize():
 	somecall.load()	# Use DB caching.
 	assert somecall(56, 9434, 'xox') == (28302, 'xoxxox')
 	assert callcnt == 2
-	for x in range(2000):
+	for x in range(200):
 		somecall[x] = x
 	somecall(57, 'a', 'b')
-	assert len(somecall) == 1000
+	assert len(somecall) == 100
 	os.remove('testdb')
 
 
