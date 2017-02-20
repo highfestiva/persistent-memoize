@@ -48,6 +48,10 @@ def test_background_memoize():
 	time.sleep(0.05)
 	assert othercall(66) == 6 # Memoized.
 	assert callcnt == 2
+	for _ in range(10):
+		othercall(77)
+	othercall.join()
+	assert callcnt == 3 # Make sure only one background thread was started.
 	assert len(othercall.background_threads) == 0
 	os.remove('testdb')
 
