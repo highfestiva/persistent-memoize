@@ -23,6 +23,7 @@ def persistent_background_memoize(filename='/tmp/', extrapolate=average_extrapol
 	def decorator(func):
 		class pdict(OrderedDict):
 			def __init__(self, filename, func):
+				super(pdict, self).__init__()
 				if isdir(filename):
 					filename = pathjoin(filename, 'memoize_'+func.__name__).replace('\\','/')
 				self.filename = filename
