@@ -9,7 +9,7 @@ def test_foreground_memoize():
 		os.remove('testdb')
 	global callcnt
 	callcnt = 0
-	@persistent_memoize('testdb', write_behind_count=0, max_entries=100)
+	@persistent_memoize('testdb', max_entries=100)
 	def somecall(t, apa, bepa):
 		global callcnt
 		callcnt += 1
@@ -35,7 +35,7 @@ def test_background_memoize():
 		os.remove('testdb')
 	global callcnt
 	callcnt = 0
-	@persistent_background_memoize('testdb', write_behind_count=0)
+	@persistent_background_memoize('testdb')
 	def othercall(n):
 		global callcnt
 		callcnt += 1
@@ -61,7 +61,7 @@ def test_auto_filename():
 	import time
 	if os.path.exists('memoize_testdb'):
 		os.remove('memoize_testdb')
-	@persistent_memoize('.') # Persist using function name in given directory.
+	@persistent_memoize # Persist using function name in default directory.
 	def testdb(i):
 		pass
 	for i in range(100):
@@ -75,7 +75,7 @@ def test_thread_flood():
 	import time
 	if os.path.exists('memoize_slow'):
 		os.remove('memoize_slow')
-	@persistent_background_memoize('.', write_behind_count=0) # Persist using function name in given directory.
+	@persistent_background_memoize # Persist using function name in default directory.
 	def slow(i):
 		time.sleep(0.001)
 		return 0
