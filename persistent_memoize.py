@@ -5,11 +5,12 @@ from functools import partial
 from os.path import isdir, join as pathjoin
 from random import random
 from threading import Thread
-from time import sleep
+from time import sleep, time
 from sys import platform
 
 
 default_path = '/tmp/' if not 'win' in platform else '.'
+default_cache_timeout = 60
 
 
 def average_extrapolation(default):
@@ -93,3 +94,33 @@ def persistent_background_memoize(filename=default_path, extrapolate=average_ext
 def persistent_memoize(filename='/tmp/', max_entries=10000, write_behind_count=0):
 	'''Memoization running only in the foregreound. Will not create worker threads.'''
 	return persistent_background_memoize(filename, extrapolate=None, max_entries=max_entries, write_behind_count=write_behind_count)
+
+
+def cache_memoize(timeout=default_cache_timeout):
+	'''Simple, unpersisted caching which flushes old values after N seconds.'''
+	def decorator(func):
+		class cdict(OrderedDict):
+			def __init__(self, func, timeout):
+				super(cdict, self).__init__()
+				self.func = func
+				self.timeout = timeout
+			def __call__(self, *args):
+				now = time()
+				for k,tv in list(self.items()):
+					value,t = tv
+					if now-t > self.timeout:
+						del self[k]
+					break # OrderedDict = sorted = no more timeouts left in cache.
+				return self[args][0]
+			def __missing__(self, key):
+				value = self.func(*key)
+				t = time()
+				self[key] = value,t
+				return value,t
+		tout = default_cache_timeout if callable(timeout) else timeout
+		return cdict(func, tout)
+	if callable(timeout):
+		func = timeout
+		return decorator(func)
+	else:
+		return partial(decorator)

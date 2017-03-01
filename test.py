@@ -86,9 +86,22 @@ def test_thread_flood():
 	os.remove('memoize_slow')
 
 
+def test_caching():
+	import time
+	@cache_memoize
+	def slow(i):
+		time.sleep(0.001)
+		return i
+	t = time.time()
+	for n in range(1000):
+		slow(4)
+	assert time.time()-t < 0.1
+
+
 if __name__ == '__main__':
 	test_foreground_memoize()
 	test_background_memoize()
 	test_auto_filename()
 	test_thread_flood()
-	print('Foreground, background and persistence seems ok.')
+	test_caching()
+	print('Foreground, background, persistence and caching seems ok.')
