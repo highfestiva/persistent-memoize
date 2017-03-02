@@ -16,7 +16,7 @@ default_cache_timeout = 60
 def average_extrapolation(default):
 	def extrapolate(prev_values):
 		if prev_values:
-			return type(next(iter(prev_values)))(sum(prev_values)/len(prev_values))
+			return type(prev_values[0])(sum(prev_values)/len(prev_values))
 		return default
 	return extrapolate
 
@@ -84,7 +84,7 @@ def persistent_background_memoize(filename=default_path, extrapolate=average_ext
 					if key not in self.background_threads:
 						self.background_threads[key] = Thread(target=self.fetch, args=(key,))
 						self.background_threads[key].start()
-				return extrapolate(self.values())
+				return extrapolate(list(self.values()))
 		fname = default_path if callable(filename) else filename
 		return pdict(func, fname)
 	if callable(filename):
