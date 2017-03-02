@@ -54,8 +54,11 @@ def persistent_background_memoize(filename=default_path, extrapolate=average_ext
 					self.updates += 1
 					if remove_entries >= 10:
 						self.updates += remove_entries
-						for k in list(self.keys())[:remove_entries]:
-							del self[k]
+						try: # Fixes thread clash at gil release upon checkinterval.
+							for k in list(self.keys())[:remove_entries]:
+								del self[k]
+						except KeyError:
+							pass
 					if self.updates >= write_behind_count:
 						try:
 							self.save()
