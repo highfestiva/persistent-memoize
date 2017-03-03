@@ -19,6 +19,7 @@ def test_foreground_memoize():
 	assert somecall(56, 9434, 'xox') == (28302, 'xoxxox')
 	somecall.clear()
 	somecall.load()	# Use DB caching.
+	assert len(somecall) == 2
 	assert somecall(56, 9434, 'xox') == (28302, 'xoxxox')
 	assert callcnt == 2
 	for x in range(200):

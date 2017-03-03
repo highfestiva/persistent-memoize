@@ -4,7 +4,7 @@ from collections import OrderedDict
 from functools import partial
 from os.path import isdir, join as pathjoin
 from random import random
-from threading import Thread
+from threading import Lock, Thread
 from time import sleep, time
 from sys import platform
 
@@ -32,33 +32,36 @@ def persistent_background_memoize(filename=default_path, extrapolate=average_ext
 				if isdir(filename):
 					filename = pathjoin(filename, 'memoize_'+func.__name__).replace('\\','/')
 				self.filename = filename
-				self.load()
 				self.func = func
 				self.background_threads = {}
 				self.updates = 0
+				self.value_mutex = Lock()
+				self.load()
 			def load(self):
 				try:
 					with open(self.filename) as f:
 						d = eval(f.read())
-						self.update(d)
+						with self.value_mutex:
+							self.update(d)
 				except:
 					pass	# Silently pass. All values will have to be reloaded.
 			def save(self):
 				with open(self.filename, 'w') as f:
-					f.write(repr(self).replace('pdict','OrderedDict'))
+					with self.value_mutex:
+						f.write(repr(self).replace('pdict','OrderedDict'))
 					self.updates = 0
 			def fetch(self, key):
 				try:
-					value = self[key] = self.func(*key)
-					remove_entries = len(self)-max_entries
+					value = self.func(*key)
+					with self.value_mutex:
+						self[key] = value
+						remove_entries = len(self)-max_entries
 					self.updates += 1
 					if remove_entries >= 10:
 						self.updates += remove_entries
-						try: # Fixes thread clash at gil release upon checkinterval.
+						with self.value_mutex: # Fixes thread clash at gil release upon checkinterval.
 							for k in list(self.keys())[:remove_entries]:
 								del self[k]
-						except KeyError:
-							pass
 					if self.updates >= write_behind_count:
 						try:
 							self.save()
@@ -84,7 +87,9 @@ def persistent_background_memoize(filename=default_path, extrapolate=average_ext
 					if key not in self.background_threads:
 						self.background_threads[key] = Thread(target=self.fetch, args=(key,))
 						self.background_threads[key].start()
-				return extrapolate(list(self.values()))
+				with self.value_mutex:
+					values = list(self.values())
+				return extrapolate(values)
 		fname = default_path if callable(filename) else filename
 		return pdict(func, fname)
 	if callable(filename):
